@@ -12,6 +12,7 @@ import customtkinter as ctk
 from tkinter import messagebox, colorchooser, filedialog
 from PIL import Image, ImageOps, ImageDraw, ImageFont
 import math
+
 # CustomTkinter Configuration
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("dark-blue")
@@ -39,13 +40,13 @@ DEFAULT_PRESETS = [
 ]
 
 BUILTIN_ICONS = [
-    "None",
-    "⭐ Star", "❤️ Heart", "🔒 Lock", "🎮 Gamepad", "🎵 Music",
+    "None", "⭐ Star", "❤️ Heart", "🔒 Lock", "🎮 Gamepad", "🎵 Music",
     "📁 Folder", "🔥 Fire", "🚀 Rocket", "⚡ Lightning", "💡 Idea",
     "📌 Pin", "💼 Work", "📷 Camera", "🎓 Education", "✈️ Travel",
     "💰 Money", "🛠️ Tools", "🐛 Bug", "✅ Success", "❌ Error",
     "⚠ Warning", "💬 Chat", "🔔 Bell", "🌍 Web", "☁️ Cloud", "🎨 Art"
 ]
+
 MODERN_PALETTE = [
     "#1ABC9C", "#2ECC71", "#3498DB", "#9B59B6", "#34495E",
     "#16A085", "#27AE60", "#2980B9", "#8E44AD", "#2C3E50",
@@ -54,17 +55,18 @@ MODERN_PALETTE = [
     "#FF9FF3", "#FF6B6B", "#48DBFB", "#1DD1A1", "#5F27CD"
 ]
 
+
 class ColorizerApp(ctk.CTk):
-    # Dodany parametr test_mode
     def __init__(self, folder_path, test_mode=False):
         super().__init__()
         self.folder_path = os.path.abspath(folder_path)
         self.test_mode = test_mode
 
-        # Zmiana tytułu okna w trybie testowym
         title_suffix = " (TEST MODE)" if self.test_mode else f" - {os.path.basename(self.folder_path)}"
         self.title(f"DirHue{title_suffix}")
-        self.geometry("620x700")
+
+        # ZWIĘKSZONY ROZMIAR OKNA
+        self.geometry("700x800")
         self.resizable(False, False)
 
         icon_path = os.path.join(os.path.dirname(__file__), "app.ico")
@@ -85,6 +87,7 @@ class ColorizerApp(ctk.CTk):
 
     def change_theme(self, new_theme: str):
         ctk.set_appearance_mode(new_theme)
+
     def load_presets(self):
         if os.path.exists(PRESETS_FILE):
             try:
@@ -102,7 +105,8 @@ class ColorizerApp(ctk.CTk):
             pass
 
     def setup_ui(self):
-        self.tabview = ctk.CTkTabview(self, width=580, height=560)
+        # ZWIĘKSZONY TABVIEW
+        self.tabview = ctk.CTkTabview(self, width=680, height=620)
         self.tabview.pack(padx=20, pady=(10, 0), fill="both", expand=True)
 
         self.tabview.add("Library")
@@ -132,13 +136,15 @@ class ColorizerApp(ctk.CTk):
         filter_frame = ctk.CTkFrame(controls_frame, fg_color="transparent")
         filter_frame.pack(fill="x")
 
-        ctk.CTkLabel(filter_frame, text="Type:", font=("Segoe UI", 12)).pack(side="left", padx=(0, 5))
+        ctk.CTkLabel(filter_frame, text="Type:", font=("Segoe UI", 12), text_color=("#000000", "#FFFFFF")).pack(
+            side="left", padx=(0, 5))
         self.filter_var = ctk.StringVar(value="All")
         self.filter_menu = ctk.CTkOptionMenu(filter_frame, values=["All", "No Overlay", "Built-in", "Custom Image"],
                                              variable=self.filter_var, command=self.refresh_library, width=120)
         self.filter_menu.pack(side="left", padx=(0, 15))
 
-        ctk.CTkLabel(filter_frame, text="Sort:", font=("Segoe UI", 12)).pack(side="left", padx=(0, 5))
+        ctk.CTkLabel(filter_frame, text="Sort:", font=("Segoe UI", 12), text_color=("#000000", "#FFFFFF")).pack(
+            side="left", padx=(0, 5))
         self.sort_var = ctk.StringVar(value="Newest")
         self.sort_menu = ctk.CTkOptionMenu(filter_frame, values=["Newest", "Oldest", "A-Z", "Z-A"],
                                            variable=self.sort_var, command=self.refresh_library, width=100)
@@ -152,44 +158,54 @@ class ColorizerApp(ctk.CTk):
         create_tab = ctk.CTkScrollableFrame(self.tabview.tab("Create Style"), fg_color=("#EBEBEB", "#242424"))
         create_tab.pack(fill="both", expand=True)
 
-        ctk.CTkLabel(create_tab, text="1. Folder Base Color",bg_color="transparent", font=("Segoe UI", 14, "bold"),
+        ctk.CTkLabel(create_tab, text="1. Folder Base Color", bg_color="transparent", font=("Segoe UI", 14, "bold"),
                      text_color=("#000000", "#FFFFFF")).pack(anchor="w", pady=(0, 5))
 
-        # Ramki w Create Style używają teraz domyślnych kolorów (adaptacyjnych)
-        wheel_preview_frame = ctk.CTkFrame(create_tab)
-        wheel_preview_frame.pack(pady=5, fill="x")
+        # --- PODGLĄD FOLDERU NA SAMEJ GÓRZE ---
+        preview_frame = ctk.CTkFrame(create_tab, fg_color="transparent")
+        preview_frame.pack(pady=(5, 10), fill="x")
 
+        self.preview_label = ctk.CTkLabel(preview_frame, text="")
+        self.preview_label.pack()  # Domyślnie wyśrodkuje podgląd
+
+        # --- KONTENER NA KOŁO BARW I SUWAKI (Obok siebie) ---
+        wheel_sliders_frame = ctk.CTkFrame(create_tab, fg_color="transparent")
+        wheel_sliders_frame.pack(pady=5, fill="x")
+
+        # LEWA STRONA: KOŁO BARW
         wheel_size = 140
         self.wheel_img_base = self.generate_color_wheel(wheel_size)
         self.wheel_ctk_img = ctk.CTkImage(light_image=self.wheel_img_base, dark_image=self.wheel_img_base,
                                           size=(wheel_size, wheel_size))
 
-        self.wheel_label = ctk.CTkLabel(wheel_preview_frame, text="", image=self.wheel_ctk_img, cursor="crosshair")
-        self.wheel_label.pack(side="left", padx=(35, 15), pady=10)
+        self.wheel_label = ctk.CTkLabel(wheel_sliders_frame, text="", image=self.wheel_ctk_img, cursor="crosshair")
+        self.wheel_label.pack(side="left", padx=(40, 30), pady=5)
 
         self.wheel_label.bind("<Button-1>", self.on_wheel_click)
         self.wheel_label.bind("<B1-Motion>", self.on_wheel_click)
 
-        self.preview_label = ctk.CTkLabel(wheel_preview_frame, text="")
-        self.preview_label.pack(side="left", padx=(15, 0))
+        # PRAWA STRONA: SUWAKI
+        sliders_frame = ctk.CTkFrame(wheel_sliders_frame, fg_color="transparent")
+        sliders_frame.pack(side="left", fill="both", expand=True)
 
-        sliders_frame = ctk.CTkFrame(create_tab)
-        sliders_frame.pack(pady=5, fill="x")
-
-        ctk.CTkLabel(sliders_frame, text="Hue (Color):", font=("Segoe UI", 12)).pack(anchor="w", padx=45, pady=(10, 0))
+        ctk.CTkLabel(sliders_frame, text="Hue (Color):", font=("Segoe UI", 12), text_color=("#000000", "#FFFFFF")).pack(
+            anchor="w", padx=5, pady=(0, 0))
         self.hue_slider = ctk.CTkSlider(sliders_frame, from_=0, to=1, command=self.update_from_sliders, width=250)
-        self.hue_slider.pack(pady=(0, 5))
+        self.hue_slider.pack(pady=(0, 5), padx=5, anchor="w")
         self.hue_slider.set(0.5)
 
-        ctk.CTkLabel(sliders_frame, text="Saturation:", font=("Segoe UI", 12)).pack(anchor="w", padx=45)
+        ctk.CTkLabel(sliders_frame, text="Saturation:", font=("Segoe UI", 12), text_color=("#000000", "#FFFFFF")).pack(
+            anchor="w", padx=5)
         self.sat_slider = ctk.CTkSlider(sliders_frame, from_=0, to=1, command=self.update_from_sliders, width=250)
-        self.sat_slider.pack(pady=(0, 5))
+        self.sat_slider.pack(pady=(0, 5), padx=5, anchor="w")
         self.sat_slider.set(0.8)
 
-        ctk.CTkLabel(sliders_frame, text="Brightness:", font=("Segoe UI", 12)).pack(anchor="w", padx=45)
+        ctk.CTkLabel(sliders_frame, text="Brightness:", font=("Segoe UI", 12), text_color=("#000000", "#FFFFFF")).pack(
+            anchor="w", padx=5)
         self.val_slider = ctk.CTkSlider(sliders_frame, from_=0, to=1, command=self.update_from_sliders, width=250)
-        self.val_slider.pack(pady=(0, 10))
+        self.val_slider.pack(pady=(0, 5), padx=5, anchor="w")
         self.val_slider.set(0.9)
+        # -----------------------------------------------------
 
         fh_frame = ctk.CTkFrame(create_tab, fg_color="transparent")
         fh_frame.pack(pady=5)
@@ -200,8 +216,8 @@ class ColorizerApp(ctk.CTk):
         self.hex_entry.grid(row=0, column=1, padx=5)
         self.hex_entry.bind("<Return>", self.update_from_hex)
 
-        ctk.CTkLabel(create_tab, text="2. Overlay (Optional)", font=("Segoe UI", 14, "bold")).pack(anchor="w",
-                                                                                                   pady=(15, 5))
+        ctk.CTkLabel(create_tab, text="2. Overlay (Optional)", font=("Segoe UI", 14, "bold"),
+                     text_color=("#000000", "#FFFFFF")).pack(anchor="w", pady=(15, 5))
 
         overlay_frame = ctk.CTkFrame(create_tab)
         overlay_frame.pack(fill="x")
@@ -214,18 +230,16 @@ class ColorizerApp(ctk.CTk):
                                          hover_color="#9B59B6", width=100, command=self.choose_overlay)
         self.overlay_btn.grid(row=0, column=1, padx=5, pady=10)
 
-        # Usunięcie overlay
         self.clear_overlay_btn = ctk.CTkButton(overlay_frame, text="❌", width=30, fg_color="transparent",
                                                border_width=1, border_color=("#999", "#555"),
-                                               text_color=("#000", "#FFF"),
-                                               command=self.clear_overlay)
+                                               text_color=("#000", "#FFF"), command=self.clear_overlay)
         self.clear_overlay_btn.grid(row=0, column=2, padx=5, pady=10)
 
         color_ov_frame = ctk.CTkFrame(create_tab)
         color_ov_frame.pack(fill="x", pady=5)
         self.colorize_overlay_var = ctk.BooleanVar(value=False)
-        self.colorize_cb = ctk.CTkCheckBox(color_ov_frame, text="Colorize Overlay:", variable=self.colorize_overlay_var,
-                                           command=self.force_preview_update)
+        self.colorize_cb = ctk.CTkCheckBox(color_ov_frame, text="Colorize Overlay:", text_color=("#000000", "#FFFFFF"),
+                                           variable=self.colorize_overlay_var, command=self.force_preview_update)
         self.colorize_cb.pack(side="left", padx=10, pady=10)
 
         self.ov_color_btn = ctk.CTkButton(color_ov_frame, text="🎨", width=30,
@@ -240,28 +254,32 @@ class ColorizerApp(ctk.CTk):
         pos_frame = ctk.CTkFrame(create_tab)
         pos_frame.pack(fill="x", pady=5)
 
-        ctk.CTkLabel(pos_frame, text="Size:").grid(row=0, column=0, padx=10, pady=10, sticky="e")
+        ctk.CTkLabel(pos_frame, text="Size:", text_color=("#000000", "#FFFFFF")).grid(row=0, column=0, padx=10, pady=10,
+                                                                                      sticky="e")
         self.ov_size_slider = ctk.CTkSlider(pos_frame, from_=0.1, to=1.0, width=120, command=self.force_preview_update)
         self.ov_size_slider.set(0.5)
         self.ov_size_slider.grid(row=0, column=1, padx=5, pady=10)
 
-        ctk.CTkLabel(pos_frame, text="Position:").grid(row=0, column=2, padx=10, pady=10, sticky="e")
+        ctk.CTkLabel(pos_frame, text="Position:", text_color=("#000000", "#FFFFFF")).grid(row=0, column=2, padx=10,
+                                                                                          pady=10, sticky="e")
         self.pos_var = ctk.StringVar(value="Center")
         self.pos_menu = ctk.CTkOptionMenu(pos_frame,
                                           values=["Center", "Top-Left", "Top-Right", "Bottom-Left", "Bottom-Right",
-                                                  "Custom"],
-                                          variable=self.pos_var, width=110, command=self.toggle_custom_pos)
+                                                  "Custom"], variable=self.pos_var, width=110,
+                                          command=self.toggle_custom_pos)
         self.pos_menu.grid(row=0, column=3, padx=5, pady=10)
 
         self.custom_pos_frame = ctk.CTkFrame(create_tab)
 
-        ctk.CTkLabel(self.custom_pos_frame, text="X Offset:").grid(row=0, column=0, padx=10, pady=10)
+        ctk.CTkLabel(self.custom_pos_frame, text="X Offset:", text_color=("#000000", "#FFFFFF")).grid(row=0, column=0,
+                                                                                                      padx=10, pady=10)
         self.ov_x_slider = ctk.CTkSlider(self.custom_pos_frame, from_=-100, to=100, width=120,
                                          command=self.force_preview_update)
         self.ov_x_slider.set(0)
         self.ov_x_slider.grid(row=0, column=1, padx=5, pady=10)
 
-        ctk.CTkLabel(self.custom_pos_frame, text="Y Offset:").grid(row=0, column=2, padx=10, pady=10)
+        ctk.CTkLabel(self.custom_pos_frame, text="Y Offset:", text_color=("#000000", "#FFFFFF")).grid(row=0, column=2,
+                                                                                                      padx=10, pady=10)
         self.ov_y_slider = ctk.CTkSlider(self.custom_pos_frame, from_=-100, to=100, width=120,
                                          command=self.force_preview_update)
         self.ov_y_slider.set(10)
@@ -269,7 +287,8 @@ class ColorizerApp(ctk.CTk):
 
         save_frame = ctk.CTkFrame(create_tab, fg_color="transparent")
         save_frame.pack(pady=(15, 5))
-        ctk.CTkLabel(save_frame, text="Style Name:", font=("Segoe UI", 12)).pack(side="left", padx=5)
+        ctk.CTkLabel(save_frame, text="Style Name:", font=("Segoe UI", 12), text_color=("#000000", "#FFFFFF")).pack(
+            side="left", padx=5)
         self.name_entry = ctk.CTkEntry(save_frame, width=120)
         self.name_entry.insert(0, "My Custom Folder")
         self.name_entry.pack(side="left", padx=5)
@@ -281,9 +300,11 @@ class ColorizerApp(ctk.CTk):
 
         # --- ZAKŁADKA: SUPPORT ---
         support_tab = self.tabview.tab("Support ❤️")
-        ctk.CTkLabel(support_tab, text="☕ Support the Developer", font=("Segoe UI", 22, "bold")).pack(pady=(40, 10))
+        ctk.CTkLabel(support_tab, text="☕ Support the Developer", font=("Segoe UI", 22, "bold"),
+                     text_color=("#000000", "#FFFFFF")).pack(pady=(40, 10))
         support_text = "This software is 100% free to use, forever.\nIf this tool saved you some time, consider supporting its development!"
-        ctk.CTkLabel(support_tab, text=support_text, font=("Segoe UI", 13), justify="center").pack(pady=20)
+        ctk.CTkLabel(support_tab, text=support_text, font=("Segoe UI", 13), text_color=("#000000", "#FFFFFF"),
+                     justify="center").pack(pady=20)
         self.donate_btn = ctk.CTkButton(support_tab, text="Buy me a coffee ☕", height=40, font=("Segoe UI", 14, "bold"),
                                         fg_color="#F39C12", hover_color="#D68910", text_color="black",
                                         command=lambda: webbrowser.open("https://buymeacoffee.com/sobalarafaa"))
@@ -293,20 +314,16 @@ class ColorizerApp(ctk.CTk):
         bottom_bar = ctk.CTkFrame(self, fg_color="transparent")
         bottom_bar.pack(fill="x", padx=20, pady=10, side="bottom")
 
-        self.theme_menu = ctk.CTkOptionMenu(bottom_bar, values=["Dark", "Light", "System"],
-                                            command=self.change_theme, width=90, height=35)
+        self.theme_menu = ctk.CTkOptionMenu(bottom_bar, values=["Dark", "Light", "System"], command=self.change_theme,
+                                            width=90, height=35)
         self.theme_menu.pack(side="left")
         self.theme_menu.set("Dark")
 
-        # Ustawiono krotki dla przycisku Restore
         self.reset_btn = ctk.CTkButton(bottom_bar, text="↺ Restore Default Folder Style", fg_color="transparent",
                                        border_width=1, border_color=("#999999", "#555555"),
-                                       hover_color=("#D9D9D9", "#333333"),
-                                       text_color=("#000000", "#FFFFFF"),
+                                       hover_color=("#D9D9D9", "#333333"), text_color=("#000000", "#FFFFFF"),
                                        command=self.reset_folder, height=35)
         self.reset_btn.pack(side="right", fill="x", expand=True, padx=(10, 0))
-
-
 
     def toggle_custom_pos(self, value):
         if value == "Custom":
@@ -338,7 +355,6 @@ class ColorizerApp(ctk.CTk):
         for col in range(columns):
             scroll.grid_columnconfigure(col, weight=1)
 
-        # Używamy krotek dla przycisków
         btn_fg = ("#D9D9D9", "#3A3A4A")
         btn_hover = ("#C0C0C0", "#4A4A5A")
         btn_text = ("#000000", "#FFFFFF")
@@ -346,13 +362,11 @@ class ColorizerApp(ctk.CTk):
         for i, icon in enumerate(BUILTIN_ICONS):
             row = i // columns
             col = i % columns
-            btn = ctk.CTkButton(scroll, text=icon, height=35,
-                                fg_color=btn_fg, hover_color=btn_hover, text_color=btn_text,
-                                command=lambda c=icon, p=picker: self.select_builtin_icon(c, p))
+            btn = ctk.CTkButton(scroll, text=icon, height=35, fg_color=btn_fg, hover_color=btn_hover,
+                                text_color=btn_text, command=lambda c=icon, p=picker: self.select_builtin_icon(c, p))
             btn.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
 
     def select_builtin_icon(self, choice, picker_window):
-        # Obsługa wyboru z okienka pop-up
         if choice == "None":
             self.builtin_btn.configure(text="⭐ Choose Icon")
             self.set_builtin_overlay("None")
@@ -360,13 +374,10 @@ class ColorizerApp(ctk.CTk):
             self.builtin_btn.configure(text=choice)
             self.set_builtin_overlay(choice)
 
-        picker_window.destroy()  # Zamyka okienko po kliknięciu
+        picker_window.destroy()
+
     def choose_overlay(self):
-        # Wsparcie dla wielu formatów obrazów
-        filetypes = [
-            ("Image Files", "*.png;*.jpg;*.jpeg;*.bmp;*.webp"),
-            ("All Files", "*.*")
-        ]
+        filetypes = [("Image Files", "*.png;*.jpg;*.jpeg;*.bmp;*.webp"), ("All Files", "*.*")]
         file_path = filedialog.askopenfilename(title="Select Overlay Image", filetypes=filetypes)
         if file_path:
             filename = f"overlay_{int(time.time())}{os.path.splitext(file_path)[1]}"
@@ -377,7 +388,7 @@ class ColorizerApp(ctk.CTk):
                 self.overlay_type = "file"
                 self.builtin_var.set("None")
                 self.force_preview_update()
-            except Exception as e:
+            except Exception:
                 pass
 
     def clear_overlay(self):
@@ -386,28 +397,74 @@ class ColorizerApp(ctk.CTk):
         self.builtin_btn.configure(text="⭐ Choose Icon")
         self.force_preview_update()
 
+    # ZMIENIONY COLOR PICKER - ZAWIERA TERAZ KOŁO BARW I PALETĘ
     def open_custom_color_picker(self, target="base"):
         picker = ctk.CTkToplevel(self)
         title_text = "Folder Color" if target == "base" else "Overlay Color"
         picker.title(f"Select {title_text}")
-        picker.geometry("340x380")
+        picker.geometry("380x560")
         picker.attributes("-topmost", True)
         picker.grab_set()
 
         scroll = ctk.CTkScrollableFrame(picker, fg_color="transparent")
         scroll.pack(fill="both", expand=True, padx=10, pady=10)
 
+        # Sekcja: Interaktywne koło
+        ctk.CTkLabel(scroll, text="Interactive Color Wheel", font=("Segoe UI", 14, "bold"),
+                     text_color=("#000000", "#FFFFFF")).pack(pady=(0, 5))
+
+        wheel_size = 160
+        wheel_img = self.generate_color_wheel(wheel_size)
+        wheel_ctk_img = ctk.CTkImage(light_image=wheel_img, dark_image=wheel_img, size=(wheel_size, wheel_size))
+
+        wheel_lbl = ctk.CTkLabel(scroll, text="", image=wheel_ctk_img, cursor="crosshair")
+        wheel_lbl.pack(pady=5)
+
+        # Logika podpięta pod nowe koło
+        def on_popup_wheel(event, release=False):
+            c = wheel_size / 2
+            x, y = event.x, event.y
+            dist = math.sqrt((x - c) ** 2 + (y - c) ** 2)
+            if dist <= c:
+                hue = (math.atan2(y - c, x - c) + math.pi) / (2 * math.pi)
+                sat = dist / c
+                r, g, b = [int(v * 255) for v in colorsys.hsv_to_rgb(hue, sat, 1.0)]
+                hex_color = f"#{r:02x}{g:02x}{b:02x}".upper()
+
+                if target == "base":
+                    self.hex_entry.delete(0, "end")
+                    self.hex_entry.insert(0, hex_color)
+                    self.update_from_hex(None)
+                elif target == "overlay":
+                    self.overlay_color_entry.delete(0, "end")
+                    self.overlay_color_entry.insert(0, hex_color)
+                    self.force_preview_update()
+
+            if release:
+                picker.destroy()
+
+        # Reaguje na przeciąganie (podgląd na żywo) i puszczenie myszy (zatwierdzenie)
+        wheel_lbl.bind("<Button-1>", lambda e: on_popup_wheel(e, release=False))
+        wheel_lbl.bind("<B1-Motion>", lambda e: on_popup_wheel(e, release=False))
+        wheel_lbl.bind("<ButtonRelease-1>", lambda e: on_popup_wheel(e, release=True))
+
+        # Sekcja: Paleta
+        ctk.CTkLabel(scroll, text="Modern Palette", font=("Segoe UI", 14, "bold"),
+                     text_color=("#000000", "#FFFFFF")).pack(pady=(20, 5))
+
+        palette_frame = ctk.CTkFrame(scroll, fg_color="transparent")
+        palette_frame.pack()
+
         columns = 5
         for col in range(columns):
-            scroll.grid_columnconfigure(col, weight=1)
+            palette_frame.grid_columnconfigure(col, weight=1)
 
         for i, hex_color in enumerate(MODERN_PALETTE):
             row = i // columns
             col = i % columns
-            # Tworzymy kolorowe kwadraty do klikania
-            btn = ctk.CTkButton(scroll, text="", width=45, height=45, corner_radius=8,
+            btn = ctk.CTkButton(palette_frame, text="", width=45, height=45, corner_radius=8,
                                 fg_color=hex_color, hover_color=hex_color,
-                                border_width=2, border_color=("#CCCCCC", "#333333"),  # <--- RAMKA TUTAJ
+                                border_width=2, border_color=("#CCCCCC", "#333333"),
                                 command=lambda c=hex_color, p=picker: self.select_custom_color(c, p, target))
             btn.grid(row=row, column=col, padx=5, pady=5)
 
@@ -415,7 +472,7 @@ class ColorizerApp(ctk.CTk):
         if target == "base":
             self.hex_entry.delete(0, "end")
             self.hex_entry.insert(0, hex_color)
-            self.update_from_hex(None)  # Automatycznie ruszy też suwakami HSL!
+            self.update_from_hex(None)
         elif target == "overlay":
             self.overlay_color_entry.delete(0, "end")
             self.overlay_color_entry.insert(0, hex_color)
@@ -424,7 +481,6 @@ class ColorizerApp(ctk.CTk):
         picker_window.destroy()
 
     def generate_color_wheel(self, size):
-        """Generuje interaktywne koło barw (zwraca obraz RGBA)"""
         img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
         pixels = img.load()
         c = size / 2
@@ -434,7 +490,6 @@ class ColorizerApp(ctk.CTk):
                 dy = y - c
                 dist = math.sqrt(dx ** 2 + dy ** 2)
                 if dist <= c:
-                    # Kąt określa odcień (Hue), odległość od środka określa nasycenie (Sat)
                     hue = (math.atan2(dy, dx) + math.pi) / (2 * math.pi)
                     sat = dist / c
                     r, g, b = [int(v * 255) for v in colorsys.hsv_to_rgb(hue, sat, 1.0)]
@@ -442,8 +497,7 @@ class ColorizerApp(ctk.CTk):
         return img
 
     def on_wheel_click(self, event):
-        """Obsługa kliknięcia i przeciągania po kole barw"""
-        size = 140  # Rozmiar zdefiniowany w UI
+        size = 140
         c = size / 2
         x, y = event.x, event.y
         dx = x - c
@@ -453,11 +507,10 @@ class ColorizerApp(ctk.CTk):
         if dist <= c:
             hue = (math.atan2(dy, dx) + math.pi) / (2 * math.pi)
             sat = dist / c
-
-            # Aktualizujemy suwaki i wymuszamy odświeżenie podglądu
             self.hue_slider.set(hue)
             self.sat_slider.set(sat)
             self.update_from_sliders(None)
+
     def generate_builtin_image(self, char):
         img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
@@ -531,7 +584,7 @@ class ColorizerApp(ctk.CTk):
                 y = (folder_h - overlay_size) // 2 + int(overlay_data.get("y_off", 10))
 
             colored_folder.paste(overlay_img, (x, y), overlay_img)
-        except Exception as e:
+        except Exception:
             pass
 
         return colored_folder
@@ -634,12 +687,9 @@ class ColorizerApp(ctk.CTk):
 
             o_type = ov_data.get("type", "none")
 
-            if filter_type == "No Overlay" and o_type != "none":
-                continue
-            if filter_type == "Built-in" and o_type != "builtin":
-                continue
-            if filter_type == "Custom Image" and o_type != "file":
-                continue
+            if filter_type == "No Overlay" and o_type != "none": continue
+            if filter_type == "Built-in" and o_type != "builtin": continue
+            if filter_type == "Custom Image" and o_type != "file": continue
 
             display_presets.append((original_idx, preset, ov_data))
 
@@ -650,7 +700,6 @@ class ColorizerApp(ctk.CTk):
         elif sort_type == "Z-A":
             display_presets.sort(key=lambda x: x[1]["name"].lower(), reverse=True)
 
-        # Definicja adaptacyjnego koloru dla kafelków!
         card_bg = ("#dedede", "#2B2B36")
 
         for render_idx, (original_idx, preset, ov_data) in enumerate(display_presets):
@@ -696,8 +745,8 @@ class ColorizerApp(ctk.CTk):
                               command=lambda h=preset["hex"], o=ov_data: self.apply_style(h, o)).pack(side="left",
                                                                                                       padx=2)
                 ctk.CTkButton(btn_frame, text="✕", width=25, height=25, font=("Segoe UI", 11), fg_color="#E74C3C",
-                              hover_color="#C0392B",
-                              command=lambda idx=original_idx: self.remove_preset(idx)).pack(side="left", padx=2)
+                              hover_color="#C0392B", command=lambda idx=original_idx: self.remove_preset(idx)).pack(
+                    side="left", padx=2)
 
     def apply_style(self, hex_code, overlay_data):
         self.process(hex_code, overlay_data)
@@ -719,7 +768,6 @@ class ColorizerApp(ctk.CTk):
             return None
 
     def process(self, hex_color, overlay_data):
-        # BLOKADA DLA TRYBU TESTOWEGO
         if self.test_mode:
             messagebox.showinfo("Test Mode",
                                 f"Sukces! Aplikacja spróbowałaby teraz zmienić kolor i ikonę na {hex_color}.\n\nJesteś w trybie testowym, więc żaden plik na Twoim dysku nie został zmodyfikowany.")
@@ -748,12 +796,10 @@ class ColorizerApp(ctk.CTk):
             messagebox.showerror("Error", f"Failed to apply: {e}")
 
     def reset_folder(self):
-        # BLOKADA DLA TRYBU TESTOWEGO
         if self.test_mode:
             messagebox.showinfo("Test Mode",
                                 "Aplikacja spróbowałaby teraz przywrócić domyślną ikonę Windows.\n\nŻadne pliki nie zostały zmienione.")
             return
-
         try:
             for f in ["folder_custom.ico", "desktop.ini"]:
                 p = os.path.join(self.folder_path, f)
@@ -784,7 +830,7 @@ class InstallerApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("DirHue - Setup")
-        self.geometry("500x380")  # Zwiększone okno pod nowy przycisk testowy
+        self.geometry("500x380")
         self.resizable(False, False)
 
         icon_path = os.path.join(os.path.dirname(__file__), "app.ico")
@@ -809,7 +855,6 @@ class InstallerApp(ctk.CTk):
         ctk.CTkEntry(entry_frame, textvariable=self.path_var, width=330).pack(side="left", padx=(0, 10))
         ctk.CTkButton(entry_frame, text="Browse...", width=80, command=self.browse_folder).pack(side="left")
 
-        # Nowy przycisk do trybu testowego
         test_btn = ctk.CTkButton(self, text="🛠️ Test GUI Mode (No Install)", fg_color="#3498DB", hover_color="#2980B9",
                                  command=self.run_test_mode)
         test_btn.pack(pady=(15, 5))
@@ -824,7 +869,6 @@ class InstallerApp(ctk.CTk):
 
     def run_test_mode(self):
         self.destroy()
-        # Uruchamiamy aplikację w trybie testowym na obecnym katalogu
         app = ColorizerApp(os.path.abspath("."), test_mode=True)
         app.mainloop()
 
@@ -877,7 +921,6 @@ class InstallerApp(ctk.CTk):
             pass
         except PermissionError:
             messagebox.showerror("Error", "Run the installer as Administrator.")
-
 
 
 if __name__ == "__main__":
