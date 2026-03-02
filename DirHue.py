@@ -199,7 +199,6 @@ class ColorizerApp(ctk.CTk):
         self.sat_slider = ctk.CTkSlider(sliders_frame, from_=0, to=1, command=self.update_from_sliders, width=250)
         self.sat_slider.pack(pady=(0, 5), padx=5, anchor="w")
         self.sat_slider.set(0.8)
-
         ctk.CTkLabel(sliders_frame, text="Brightness:", font=("Segoe UI", 12), text_color=("#000000", "#FFFFFF")).pack(
             anchor="w", padx=5)
         self.val_slider = ctk.CTkSlider(sliders_frame, from_=0, to=1, command=self.update_from_sliders, width=250)
