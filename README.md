@@ -1,6 +1,11 @@
 # 🎨 DirHue
 
 A lightweight, free, and open-source Windows application that allows you to change the color of any folder on your desktop with just a few clicks. Make your workspace organized, unique, and visually appealing!
+## ScreenShoots
+<img width="602" height="612" alt="image" src="https://github.com/user-attachments/assets/23abbf20-ba36-4ab7-91e3-3ad50ff01151" />
+
+<img width="602" height="612" alt="image" src="https://github.com/user-attachments/assets/64b6d30c-d417-4a53-ad85-34f4e57cc3e4" />
+
 <img width="602" height="612" alt="image" src="https://github.com/user-attachments/assets/17c91663-5606-4aad-8842-32e109271d39" />
 
 
