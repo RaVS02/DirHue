@@ -27,4 +27,5 @@ This project is completely free. If you like it and want to support the developm
 [☕ Buy me a coffee](https://buymeacoffee.com/sobalarafaa)
 
 ## 📝 Credits
-* Application icon created by [Nazwa Autora/Twórcy] from [Flaticon / Freepik / inna strona] - [Link do strony z ikoną]
+* Application icon created by Trinh Ho from [https://icon-icons.com] - https://icon-icons.com/icon/painter/96707). 
+Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
