@@ -11,7 +11,7 @@ import webbrowser
 import customtkinter as ctk
 from tkinter import messagebox, colorchooser, filedialog
 from PIL import Image, ImageOps, ImageDraw, ImageFont
-
+import math
 # CustomTkinter Configuration
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("dark-blue")
@@ -46,7 +46,13 @@ BUILTIN_ICONS = [
     "💰 Money", "🛠️ Tools", "🐛 Bug", "✅ Success", "❌ Error",
     "⚠ Warning", "💬 Chat", "🔔 Bell", "🌍 Web", "☁️ Cloud", "🎨 Art"
 ]
-
+MODERN_PALETTE = [
+    "#1ABC9C", "#2ECC71", "#3498DB", "#9B59B6", "#34495E",
+    "#16A085", "#27AE60", "#2980B9", "#8E44AD", "#2C3E50",
+    "#F1C40F", "#E67E22", "#E74C3C", "#ECF0F1", "#95A5A6",
+    "#F39C12", "#D35400", "#C0392B", "#BDC3C7", "#7F8C8D",
+    "#FF9FF3", "#FF6B6B", "#48DBFB", "#1DD1A1", "#5F27CD"
+]
 
 class ColorizerApp(ctk.CTk):
     # Dodany parametr test_mode
@@ -77,6 +83,8 @@ class ColorizerApp(ctk.CTk):
 
         self.setup_ui()
 
+    def change_theme(self, new_theme: str):
+        ctk.set_appearance_mode(new_theme)
     def load_presets(self):
         if os.path.exists(PRESETS_FILE):
             try:
@@ -104,11 +112,9 @@ class ColorizerApp(ctk.CTk):
         # --- ZAKŁADKA: LIBRARY ---
         lib_tab = self.tabview.tab("Library")
 
-        # Panel sterowania (Wyszukiwanie, Filtrowanie, Sortowanie)
         controls_frame = ctk.CTkFrame(lib_tab, fg_color="transparent")
         controls_frame.pack(fill="x", padx=5, pady=5)
 
-        # Wyszukiwarka i przełącznik widoku
         search_frame = ctk.CTkFrame(controls_frame, fg_color="transparent")
         search_frame.pack(fill="x", pady=(0, 5))
 
@@ -123,7 +129,6 @@ class ColorizerApp(ctk.CTk):
                                                        variable=self.view_mode_var, command=self.refresh_library)
         self.view_mode_switch.pack(side="right")
 
-        # Filtrowanie i sortowanie
         filter_frame = ctk.CTkFrame(controls_frame, fg_color="transparent")
         filter_frame.pack(fill="x")
 
@@ -139,25 +144,39 @@ class ColorizerApp(ctk.CTk):
                                            variable=self.sort_var, command=self.refresh_library, width=100)
         self.sort_menu.pack(side="left")
 
-        # Kontener na kafelki
-        self.library_scroll = ctk.CTkScrollableFrame(lib_tab, fg_color="transparent")
+        self.library_scroll = ctk.CTkScrollableFrame(lib_tab, fg_color=("#EBEBEB", "#242424"))
         self.library_scroll.pack(fill="both", expand=True, padx=5, pady=5)
         self.refresh_library()
 
-        # --- ZAKŁADKA: CREATE STYLE (Scrollable) ---
-        create_tab = ctk.CTkScrollableFrame(self.tabview.tab("Create Style"), fg_color="transparent")
+        # --- ZAKŁADKA: CREATE STYLE ---
+        create_tab = ctk.CTkScrollableFrame(self.tabview.tab("Create Style"), fg_color=("#EBEBEB", "#242424"))
         create_tab.pack(fill="both", expand=True)
 
-        ctk.CTkLabel(create_tab, text="1. Folder Base Color", font=("Segoe UI", 14, "bold")).pack(anchor="w",
-                                                                                                  pady=(0, 5))
+        ctk.CTkLabel(create_tab, text="1. Folder Base Color",bg_color="transparent", font=("Segoe UI", 14, "bold"),
+                     text_color=("#000000", "#FFFFFF")).pack(anchor="w", pady=(0, 5))
 
-        self.preview_label = ctk.CTkLabel(create_tab, text="")
-        self.preview_label.pack(pady=5)
+        # Ramki w Create Style używają teraz domyślnych kolorów (adaptacyjnych)
+        wheel_preview_frame = ctk.CTkFrame(create_tab)
+        wheel_preview_frame.pack(pady=5, fill="x")
 
-        sliders_frame = ctk.CTkFrame(create_tab, fg_color="transparent")
+        wheel_size = 140
+        self.wheel_img_base = self.generate_color_wheel(wheel_size)
+        self.wheel_ctk_img = ctk.CTkImage(light_image=self.wheel_img_base, dark_image=self.wheel_img_base,
+                                          size=(wheel_size, wheel_size))
+
+        self.wheel_label = ctk.CTkLabel(wheel_preview_frame, text="", image=self.wheel_ctk_img, cursor="crosshair")
+        self.wheel_label.pack(side="left", padx=(35, 15), pady=10)
+
+        self.wheel_label.bind("<Button-1>", self.on_wheel_click)
+        self.wheel_label.bind("<B1-Motion>", self.on_wheel_click)
+
+        self.preview_label = ctk.CTkLabel(wheel_preview_frame, text="")
+        self.preview_label.pack(side="left", padx=(15, 0))
+
+        sliders_frame = ctk.CTkFrame(create_tab)
         sliders_frame.pack(pady=5, fill="x")
 
-        ctk.CTkLabel(sliders_frame, text="Hue (Color):", font=("Segoe UI", 12)).pack(anchor="w", padx=45)
+        ctk.CTkLabel(sliders_frame, text="Hue (Color):", font=("Segoe UI", 12)).pack(anchor="w", padx=45, pady=(10, 0))
         self.hue_slider = ctk.CTkSlider(sliders_frame, from_=0, to=1, command=self.update_from_sliders, width=250)
         self.hue_slider.pack(pady=(0, 5))
         self.hue_slider.set(0.5)
@@ -169,12 +188,13 @@ class ColorizerApp(ctk.CTk):
 
         ctk.CTkLabel(sliders_frame, text="Brightness:", font=("Segoe UI", 12)).pack(anchor="w", padx=45)
         self.val_slider = ctk.CTkSlider(sliders_frame, from_=0, to=1, command=self.update_from_sliders, width=250)
-        self.val_slider.pack(pady=(0, 5))
+        self.val_slider.pack(pady=(0, 10))
         self.val_slider.set(0.9)
 
         fh_frame = ctk.CTkFrame(create_tab, fg_color="transparent")
         fh_frame.pack(pady=5)
-        self.wheel_btn = ctk.CTkButton(fh_frame, text="🎨 Pick Color", width=100, command=self.open_color_wheel)
+        self.wheel_btn = ctk.CTkButton(fh_frame, text="🎨 Color Palette", width=110,
+                                       command=lambda: self.open_custom_color_picker("base"))
         self.wheel_btn.grid(row=0, column=0, padx=5)
         self.hex_entry = ctk.CTkEntry(fh_frame, width=90)
         self.hex_entry.grid(row=0, column=1, padx=5)
@@ -183,67 +203,69 @@ class ColorizerApp(ctk.CTk):
         ctk.CTkLabel(create_tab, text="2. Overlay (Optional)", font=("Segoe UI", 14, "bold")).pack(anchor="w",
                                                                                                    pady=(15, 5))
 
-        overlay_frame = ctk.CTkFrame(create_tab, fg_color="transparent")
+        overlay_frame = ctk.CTkFrame(create_tab)
         overlay_frame.pack(fill="x")
 
-        # --- PODMIEŃ NA TO ---
         self.builtin_btn = ctk.CTkButton(overlay_frame, text="⭐ Choose Icon", fg_color="#2980B9", hover_color="#3498DB",
                                          width=110, command=self.open_icon_picker)
-        self.builtin_btn.grid(row=0, column=0, padx=5, pady=5)
+        self.builtin_btn.grid(row=0, column=0, padx=10, pady=10)
 
         self.overlay_btn = ctk.CTkButton(overlay_frame, text="📂 Upload Image", fg_color="#8E44AD",
                                          hover_color="#9B59B6", width=100, command=self.choose_overlay)
-        self.overlay_btn.grid(row=0, column=1, padx=5, pady=5)
+        self.overlay_btn.grid(row=0, column=1, padx=5, pady=10)
 
+        # Usunięcie overlay
         self.clear_overlay_btn = ctk.CTkButton(overlay_frame, text="❌", width=30, fg_color="transparent",
-                                               border_width=1, command=self.clear_overlay)
-        self.clear_overlay_btn.grid(row=0, column=2, padx=5, pady=5)
+                                               border_width=1, border_color=("#999", "#555"),
+                                               text_color=("#000", "#FFF"),
+                                               command=self.clear_overlay)
+        self.clear_overlay_btn.grid(row=0, column=2, padx=5, pady=10)
 
-        color_ov_frame = ctk.CTkFrame(create_tab, fg_color="transparent")
+        color_ov_frame = ctk.CTkFrame(create_tab)
         color_ov_frame.pack(fill="x", pady=5)
         self.colorize_overlay_var = ctk.BooleanVar(value=False)
         self.colorize_cb = ctk.CTkCheckBox(color_ov_frame, text="Colorize Overlay:", variable=self.colorize_overlay_var,
                                            command=self.force_preview_update)
-        self.colorize_cb.pack(side="left", padx=10)
+        self.colorize_cb.pack(side="left", padx=10, pady=10)
 
-        # Nowy przycisk palety dla nakładki
-        self.ov_color_btn = ctk.CTkButton(color_ov_frame, text="🎨", width=30, command=self.open_overlay_color_wheel)
-        self.ov_color_btn.pack(side="left", padx=(0, 5))
+        self.ov_color_btn = ctk.CTkButton(color_ov_frame, text="🎨", width=30,
+                                          command=lambda: self.open_custom_color_picker("overlay"))
+        self.ov_color_btn.pack(side="left", padx=(0, 5), pady=10)
 
         self.overlay_color_entry = ctk.CTkEntry(color_ov_frame, width=80)
         self.overlay_color_entry.insert(0, "#FFFFFF")
-        self.overlay_color_entry.pack(side="left", padx=5)
+        self.overlay_color_entry.pack(side="left", padx=5, pady=10)
         self.overlay_color_entry.bind("<Return>", lambda e: self.force_preview_update())
 
-        pos_frame = ctk.CTkFrame(create_tab, fg_color="transparent")
+        pos_frame = ctk.CTkFrame(create_tab)
         pos_frame.pack(fill="x", pady=5)
 
-        ctk.CTkLabel(pos_frame, text="Size:").grid(row=0, column=0, padx=5, sticky="e")
+        ctk.CTkLabel(pos_frame, text="Size:").grid(row=0, column=0, padx=10, pady=10, sticky="e")
         self.ov_size_slider = ctk.CTkSlider(pos_frame, from_=0.1, to=1.0, width=120, command=self.force_preview_update)
         self.ov_size_slider.set(0.5)
-        self.ov_size_slider.grid(row=0, column=1, padx=5)
+        self.ov_size_slider.grid(row=0, column=1, padx=5, pady=10)
 
-        ctk.CTkLabel(pos_frame, text="Position:").grid(row=0, column=2, padx=5, sticky="e")
+        ctk.CTkLabel(pos_frame, text="Position:").grid(row=0, column=2, padx=10, pady=10, sticky="e")
         self.pos_var = ctk.StringVar(value="Center")
         self.pos_menu = ctk.CTkOptionMenu(pos_frame,
                                           values=["Center", "Top-Left", "Top-Right", "Bottom-Left", "Bottom-Right",
                                                   "Custom"],
                                           variable=self.pos_var, width=110, command=self.toggle_custom_pos)
-        self.pos_menu.grid(row=0, column=3, padx=5)
+        self.pos_menu.grid(row=0, column=3, padx=5, pady=10)
 
-        self.custom_pos_frame = ctk.CTkFrame(create_tab, fg_color="transparent")
+        self.custom_pos_frame = ctk.CTkFrame(create_tab)
 
-        ctk.CTkLabel(self.custom_pos_frame, text="X Offset:").grid(row=0, column=0, padx=5)
+        ctk.CTkLabel(self.custom_pos_frame, text="X Offset:").grid(row=0, column=0, padx=10, pady=10)
         self.ov_x_slider = ctk.CTkSlider(self.custom_pos_frame, from_=-100, to=100, width=120,
                                          command=self.force_preview_update)
         self.ov_x_slider.set(0)
-        self.ov_x_slider.grid(row=0, column=1, padx=5)
+        self.ov_x_slider.grid(row=0, column=1, padx=5, pady=10)
 
-        ctk.CTkLabel(self.custom_pos_frame, text="Y Offset:").grid(row=0, column=2, padx=5)
+        ctk.CTkLabel(self.custom_pos_frame, text="Y Offset:").grid(row=0, column=2, padx=10, pady=10)
         self.ov_y_slider = ctk.CTkSlider(self.custom_pos_frame, from_=-100, to=100, width=120,
                                          command=self.force_preview_update)
         self.ov_y_slider.set(10)
-        self.ov_y_slider.grid(row=0, column=3, padx=5)
+        self.ov_y_slider.grid(row=0, column=3, padx=5, pady=10)
 
         save_frame = ctk.CTkFrame(create_tab, fg_color="transparent")
         save_frame.pack(pady=(15, 5))
@@ -270,17 +292,21 @@ class ColorizerApp(ctk.CTk):
         # --- GLOBALNY PASEK DOLNY ---
         bottom_bar = ctk.CTkFrame(self, fg_color="transparent")
         bottom_bar.pack(fill="x", padx=20, pady=10, side="bottom")
-        self.reset_btn = ctk.CTkButton(bottom_bar, text="↺ Restore Default Folder Style", fg_color="transparent",
-                                       border_width=1, border_color="#555", hover_color="#333",
-                                       command=self.reset_folder, height=35)
-        self.reset_btn.pack(fill="x")
 
-    def open_overlay_color_wheel(self):
-        color = colorchooser.askcolor(title="Choose Overlay Color")[1]
-        if color:
-            self.overlay_color_entry.delete(0, "end")
-            self.overlay_color_entry.insert(0, color.upper())
-            self.force_preview_update()
+        self.theme_menu = ctk.CTkOptionMenu(bottom_bar, values=["Dark", "Light", "System"],
+                                            command=self.change_theme, width=90, height=35)
+        self.theme_menu.pack(side="left")
+        self.theme_menu.set("Dark")
+
+        # Ustawiono krotki dla przycisku Restore
+        self.reset_btn = ctk.CTkButton(bottom_bar, text="↺ Restore Default Folder Style", fg_color="transparent",
+                                       border_width=1, border_color=("#999999", "#555555"),
+                                       hover_color=("#D9D9D9", "#333333"),
+                                       text_color=("#000000", "#FFFFFF"),
+                                       command=self.reset_folder, height=35)
+        self.reset_btn.pack(side="right", fill="x", expand=True, padx=(10, 0))
+
+
 
     def toggle_custom_pos(self, value):
         if value == "Custom":
@@ -299,27 +325,29 @@ class ColorizerApp(ctk.CTk):
         self.force_preview_update()
 
     def open_icon_picker(self):
-        # Tworzy nowe okienko Pop-up na wierzchu
         picker = ctk.CTkToplevel(self)
         picker.title("Select Icon")
         picker.geometry("340x400")
         picker.attributes("-topmost", True)
-        picker.grab_set()  # Blokuje klikanie w główne okno, dopóki nie wybierzesz ikony
+        picker.grab_set()
 
-        # Przewijana ramka wewnątrz pop-upa
         scroll = ctk.CTkScrollableFrame(picker, fg_color="transparent")
         scroll.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Siatka 3 kolumn dla emotek
         columns = 3
         for col in range(columns):
             scroll.grid_columnconfigure(col, weight=1)
+
+        # Używamy krotek dla przycisków
+        btn_fg = ("#D9D9D9", "#3A3A4A")
+        btn_hover = ("#C0C0C0", "#4A4A5A")
+        btn_text = ("#000000", "#FFFFFF")
 
         for i, icon in enumerate(BUILTIN_ICONS):
             row = i // columns
             col = i % columns
             btn = ctk.CTkButton(scroll, text=icon, height=35,
-                                fg_color="#3A3A4A", hover_color="#4A4A5A",
+                                fg_color=btn_fg, hover_color=btn_hover, text_color=btn_text,
                                 command=lambda c=icon, p=picker: self.select_builtin_icon(c, p))
             btn.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
 
@@ -358,13 +386,78 @@ class ColorizerApp(ctk.CTk):
         self.builtin_btn.configure(text="⭐ Choose Icon")
         self.force_preview_update()
 
-    def open_color_wheel(self):
-        color = colorchooser.askcolor(title="Choose a Color")[1]
-        if color:
-            self.hex_entry.delete(0, "end")
-            self.hex_entry.insert(0, color.upper())
-            self.update_from_hex(None)
+    def open_custom_color_picker(self, target="base"):
+        picker = ctk.CTkToplevel(self)
+        title_text = "Folder Color" if target == "base" else "Overlay Color"
+        picker.title(f"Select {title_text}")
+        picker.geometry("340x380")
+        picker.attributes("-topmost", True)
+        picker.grab_set()
 
+        scroll = ctk.CTkScrollableFrame(picker, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=10, pady=10)
+
+        columns = 5
+        for col in range(columns):
+            scroll.grid_columnconfigure(col, weight=1)
+
+        for i, hex_color in enumerate(MODERN_PALETTE):
+            row = i // columns
+            col = i % columns
+            # Tworzymy kolorowe kwadraty do klikania
+            btn = ctk.CTkButton(scroll, text="", width=45, height=45, corner_radius=8,
+                                fg_color=hex_color, hover_color=hex_color,
+                                border_width=2, border_color=("#CCCCCC", "#333333"),  # <--- RAMKA TUTAJ
+                                command=lambda c=hex_color, p=picker: self.select_custom_color(c, p, target))
+            btn.grid(row=row, column=col, padx=5, pady=5)
+
+    def select_custom_color(self, hex_color, picker_window, target):
+        if target == "base":
+            self.hex_entry.delete(0, "end")
+            self.hex_entry.insert(0, hex_color)
+            self.update_from_hex(None)  # Automatycznie ruszy też suwakami HSL!
+        elif target == "overlay":
+            self.overlay_color_entry.delete(0, "end")
+            self.overlay_color_entry.insert(0, hex_color)
+            self.force_preview_update()
+
+        picker_window.destroy()
+
+    def generate_color_wheel(self, size):
+        """Generuje interaktywne koło barw (zwraca obraz RGBA)"""
+        img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        pixels = img.load()
+        c = size / 2
+        for x in range(size):
+            for y in range(size):
+                dx = x - c
+                dy = y - c
+                dist = math.sqrt(dx ** 2 + dy ** 2)
+                if dist <= c:
+                    # Kąt określa odcień (Hue), odległość od środka określa nasycenie (Sat)
+                    hue = (math.atan2(dy, dx) + math.pi) / (2 * math.pi)
+                    sat = dist / c
+                    r, g, b = [int(v * 255) for v in colorsys.hsv_to_rgb(hue, sat, 1.0)]
+                    pixels[x, y] = (r, g, b, 255)
+        return img
+
+    def on_wheel_click(self, event):
+        """Obsługa kliknięcia i przeciągania po kole barw"""
+        size = 140  # Rozmiar zdefiniowany w UI
+        c = size / 2
+        x, y = event.x, event.y
+        dx = x - c
+        dy = y - c
+        dist = math.sqrt(dx ** 2 + dy ** 2)
+
+        if dist <= c:
+            hue = (math.atan2(dy, dx) + math.pi) / (2 * math.pi)
+            sat = dist / c
+
+            # Aktualizujemy suwaki i wymuszamy odświeżenie podglądu
+            self.hue_slider.set(hue)
+            self.sat_slider.set(sat)
+            self.update_from_sliders(None)
     def generate_builtin_image(self, char):
         img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
@@ -522,20 +615,15 @@ class ColorizerApp(ctk.CTk):
             for col_idx in range(columns):
                 self.library_scroll.grid_columnconfigure(col_idx, weight=0)
 
-        # Pobieranie wartości z filtrów
         search_query = self.search_var.get().lower()
         filter_type = self.filter_var.get()
         sort_type = self.sort_var.get()
 
-        # Generowanie przefiltrowanej listy do wyświetlenia
-        # Zapisujemy oryginalny indeks, by przycisk "X" usuwał odpowiedni element!
         display_presets = []
         for original_idx, preset in enumerate(self.presets):
-            # 1. Filtr Wyszukiwania
             if search_query and search_query not in preset["name"].lower():
                 continue
 
-            # 2. Filtr Typu Nakładki
             ov_data = preset.get("overlay_data", None)
             if not ov_data:
                 old_ov = preset.get("overlay", None)
@@ -555,19 +643,19 @@ class ColorizerApp(ctk.CTk):
 
             display_presets.append((original_idx, preset, ov_data))
 
-        # 3. Sortowanie
         if sort_type == "Newest":
             display_presets.reverse()
         elif sort_type == "A-Z":
             display_presets.sort(key=lambda x: x[1]["name"].lower())
         elif sort_type == "Z-A":
             display_presets.sort(key=lambda x: x[1]["name"].lower(), reverse=True)
-        # Sortowanie "Oldest" to oryginalna kolejność z listy, więc nic nie robimy
 
-        # Renderowanie wyświetlanych kafelków
+        # Definicja adaptacyjnego koloru dla kafelków!
+        card_bg = ("#dedede", "#2B2B36")
+
         for render_idx, (original_idx, preset, ov_data) in enumerate(display_presets):
             if mode == "List":
-                card = ctk.CTkFrame(self.library_scroll, fg_color="#2B2B36", corner_radius=8)
+                card = ctk.CTkFrame(self.library_scroll, fg_color=card_bg, corner_radius=8)
                 card.pack(fill="x", pady=4, padx=5)
 
                 colored_folder = self.compose_folder_image(preset["hex"], ov_data)
@@ -580,16 +668,14 @@ class ColorizerApp(ctk.CTk):
 
                 ctk.CTkLabel(card, text=preset["name"], font=("Segoe UI", 14, "bold")).pack(side="left", padx=10)
 
-                # Zwróć uwagę: usuwamy po original_idx!
                 ctk.CTkButton(card, text="✕", width=30, height=30, fg_color="#E74C3C", hover_color="#C0392B",
                               command=lambda idx=original_idx: self.remove_preset(idx)).pack(side="right", padx=(5, 10))
                 ctk.CTkButton(card, text="Apply", width=70, height=30, fg_color="#3498DB", hover_color="#2980B9",
                               command=lambda h=preset["hex"], o=ov_data: self.apply_style(h, o)).pack(side="right",
                                                                                                       padx=5)
             else:
-                # WIDOK SIATKI - używamy render_idx do pozycjonowania siatki
                 row, col = render_idx // columns, render_idx % columns
-                card = ctk.CTkFrame(self.library_scroll, fg_color="#2B2B36", corner_radius=8)
+                card = ctk.CTkFrame(self.library_scroll, fg_color=card_bg, corner_radius=8)
                 card.grid(row=row, column=col, padx=8, pady=8, sticky="nsew")
 
                 colored_folder = self.compose_folder_image(preset["hex"], ov_data)
@@ -791,6 +877,7 @@ class InstallerApp(ctk.CTk):
             pass
         except PermissionError:
             messagebox.showerror("Error", "Run the installer as Administrator.")
+
 
 
 if __name__ == "__main__":

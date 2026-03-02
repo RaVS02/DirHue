@@ -11,9 +11,11 @@ A lightweight, free, and open-source Windows application that allows you to chan
 
 ## ✨ Features
 * **Right-Click Integration:** Fully integrated into the Windows Context Menu.
-* **Custom Color Creator:** Create ANY color using the Hue, Saturation, and Brightness sliders or a built-in Color Wheel.
-* **Color Library:** Save your favorite colors to your personal library for quick access later.
-* **Free & No Ads:** 100% free forever. No watermarks, no background services eating up your RAM.
+* **Interactive Color Wheel:** Create ANY color using the beautifully rendered color wheel or precise Hue, Saturation, and Brightness sliders.
+* **Custom Overlays:** Add PNG images or built-in emojis (⭐, 🔒, 🎮) as overlays on top of your folders. Resize, reposition, and even colorize them!
+* **Smart Library:** Save your creations to your personal library. Search, sort, and switch between List and Grid views for easy management.
+* **Test Mode:** Play around with the UI and create styles safely without modifying actual folders on your disk.
+* **Free & No Ads:** 100% free forever. No background services eating up your RAM.
 
 ## 🚀 Installation
 
@@ -21,13 +23,14 @@ A lightweight, free, and open-source Windows application that allows you to chan
 2. Run `DirHue.exe` **as Administrator** (Right-click -> Run as administrator).
 3. Choose your preferred installation directory or leave it as default.
 4. Click **Install to Context Menu**.
-5. Done! 
+*(Note: You can also click "Test GUI Mode" to try the app without installing!)*
 
 ## 💡 How to use
 1. Right-click on any folder in Windows Explorer.
-2. Select **Colorize Folder** from the context menu.
-3. The app will open. Choose a preset from your Library, or create a new style!
+2. Select **DirHue - Colorize** from the context menu (On Windows 11, you might need to click "Show more options" first).
+3. The app will open. Choose a preset from your Library, or create a new style using the color wheel and overlay uploader.
 4. Click **Apply**. 
+*(To remove the custom look and revert to the default Windows folder, click the "Restore Default Folder Style" button at the bottom).*
 
 ## ❤️ Support
 This project is completely free. If you like it and want to support the development, you can buy me a coffee! 
