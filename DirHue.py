@@ -405,7 +405,7 @@ class InstallerApp(ctk.CTk):
         key_path = r"Directory\shell\DirHueFolder"
         try:
             with winreg.CreateKey(winreg.HKEY_CLASSES_ROOT, key_path) as key:
-                winreg.SetValue(key, "", winreg.REG_SZ, "Colorize Folder")
+                winreg.SetValue(key, "", winreg.REG_SZ, "Colorize Folder(DirHue)")
                 winreg.SetValueEx(key, "Icon", 0, winreg.REG_SZ, f"{dest_path},0")
             with winreg.CreateKey(winreg.HKEY_CLASSES_ROOT, key_path + r"\command") as key:
                 winreg.SetValue(key, "", winreg.REG_SZ, f'"{dest_path}" "%1"')
