@@ -1,0 +1,17 @@
+# Cache Pythona
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pliki generowane przez PyInstaller
+build/
+dist/
+*.spec
+
+# Wirtualne środowiska (jeśli używasz)
+venv/
+env/
+
+# Ukryte pliki systemowe
+.DS_Store
+Thumbs.db
