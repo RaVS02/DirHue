@@ -2,11 +2,10 @@
 
 A lightweight, free, and open-source Windows application that allows you to change the color of any folder on your desktop with just a few clicks. Make your workspace organized, unique, and visually appealing!
 ## ScreenShoots
-<img width="602" height="612" alt="image" src="https://github.com/user-attachments/assets/23abbf20-ba36-4ab7-91e3-3ad50ff01151" />
+<img width="702" height="832" alt="image" src="https://github.com/user-attachments/assets/01537de9-5d05-42e6-961e-9cd487e2941c" />
+<img width="702" height="832" alt="image" src="https://github.com/user-attachments/assets/b2988531-dc6f-4db8-ae99-d967b9ea7c33" />
+<img width="702" height="832" alt="image" src="https://github.com/user-attachments/assets/950b53fd-eeeb-40ed-b2b5-ad5196f67067" />
 
-<img width="602" height="612" alt="image" src="https://github.com/user-attachments/assets/64b6d30c-d417-4a53-ad85-34f4e57cc3e4" />
-
-<img width="602" height="612" alt="image" src="https://github.com/user-attachments/assets/17c91663-5606-4aad-8842-32e109271d39" />
 
 
 ## ✨ Features
@@ -18,6 +17,7 @@ A lightweight, free, and open-source Windows application that allows you to chan
 * **Free & No Ads:** 100% free forever. No background services eating up your RAM.
 
 ## 🚀 Installation
+<img width="502" height="412" alt="image" src="https://github.com/user-attachments/assets/abc3c0ef-57ed-4e21-b4b3-f47f6dec5aa7" />
 
 1. Go to the [Releases page](../../releases) and download the latest `DirHue.exe` file.
 2. Run `DirHue.exe` **as Administrator** (Right-click -> Run as administrator).
